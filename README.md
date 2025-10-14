@@ -41,3 +41,8 @@ The script sets `systemTags: ["markdown"]` when creating/updating the note so Si
 - Cron runs in UTC; the script uses Asia/Kolkata to determine the current slot.
 - Open Simplenote once so sync is active; then pin the note widget.
 - Widget refresh depends on Simplenote sync cadence.
+
+## Trigger Github Action
+```bash
+gh workflow run
+```

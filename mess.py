@@ -81,8 +81,36 @@ def slot_now() -> str:
 	return "breakfast"
 
 
+def next_slot_and_day(current_day: int) -> tuple[str, int]:
+	"""Return the next meal slot and the day it belongs to in IST.
+
+	Uses slot start times (no grace), rolling over to next day after dinner starts.
+	"""
+	now = datetime.now(TZ)
+	m = now.hour * 60 + now.minute
+
+	bf_start = 7 * 60 + 30
+	l_start = 12 * 60
+	sn_start = 16 * 60 + 30
+	d_start = 19 * 60 + 30
+
+	if m < bf_start:
+		return "breakfast", current_day
+	if m < l_start:
+		return "lunch", current_day
+	if m < sn_start:
+		return "snacks", current_day
+	if m < d_start:
+		return "dinner", current_day
+	# After dinner start, next is next day's breakfast
+	return "breakfast", (current_day % 7) + 1
+
+
 def build_text(hostel_name: str, day: int, today: dict, week: list[dict]) -> str:
 	now_slot = slot_now()
+	next_slot, next_day = next_slot_and_day(day)
+	menu_next = next(m for m in week if m["day"] == next_day)
+	updated_ts = datetime.now(TZ).strftime("%H:%M")
 
 	def split_items(raw: str) -> list[str]:
 		if not raw:
@@ -114,15 +142,17 @@ def build_text(hostel_name: str, day: int, today: dict, week: list[dict]) -> str
 		items = split_items(raw)
 		if not items:
 			return [f"{label}: -"]
-		return [label + ":"] + [f"  • {it}" for it in items]
+		joined = "; ".join(items)
+		return [f"{label}: {joined}"]
 
 	lines = [
 		f"{NOTE_TITLE}",
-		f"{hostel_name} — Day {day} ({weekday_name(day)})",
+		f"{hostel_name} — Day {day} ({weekday_name(day)}) 🕒 {updated_ts} IST",
 		"----------------------------------------",
-		f"NOW ({now_slot.upper()}):",
 	]
-	lines += [f"  • {it}" for it in split_items(today.get(now_slot, ''))]
+	lines += section(f"NEXT ({next_slot.upper()})", menu_next.get(next_slot, ""))
+	lines += [""]
+	lines += section(f"NOW ({now_slot.upper()})", today.get(now_slot, ""))
 	lines += ["", *section("Lunch", today.get("lunch", ""))]
 	lines += ["", *section("Snacks", today.get("snacks", ""))]
 	lines += ["", *section("Dinner", today.get("dinner", ""))]
