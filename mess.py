@@ -96,8 +96,6 @@ def next_slot_and_day(current_day: int) -> tuple[str, int]:
 
 def build_text(hostel_name: str, day: int, today: dict, week: list[dict]) -> str:
 	now_slot = slot_now()
-	next_slot, next_day = next_slot_and_day(day)
-	menu_next = next(m for m in week if m["day"] == next_day)
 	updated_ts = datetime.now(TZ).strftime("%H:%M")
 
 	def split_items(raw: str) -> list[str]:
@@ -138,8 +136,6 @@ def build_text(hostel_name: str, day: int, today: dict, week: list[dict]) -> str
 		f"{hostel_name} — Day {day} ({weekday_name(day)}) 🕒 {updated_ts} IST",
 		"----------------------------------------",
 	]
-	lines += section(f"NEXT ({next_slot.upper()})", menu_next.get(next_slot, ""))
-	lines += [""]
 	lines += section(f"NOW ({now_slot.upper()})", today.get(now_slot, ""))
 	lines += ["", *section("Lunch", today.get("lunch", ""))]
 	lines += ["", *section("Snacks", today.get("snacks", ""))]
