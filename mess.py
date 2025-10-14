@@ -41,7 +41,7 @@ def fetch_today(hostel: str = "Hostel 18"):
 	)
 	# Python weekday: Monday=1..Sunday=7
 	now = datetime.now(TZ)
-	day = date.fromtimestamp(now.timestamp()).isoweekday()
+	day = now.isoweekday()
 	# After dinner grace end (22:00), treat "now" as next day's breakfast
 	m = now.hour * 60 + now.minute
 	if m >= 22 * 60:
