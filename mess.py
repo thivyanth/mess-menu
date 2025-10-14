@@ -24,9 +24,15 @@ def fetch_today(hostel: str = "Hostel 18"):
 		if x.get("name") == hostel or x.get("short_name") == hostel.split()[-1]
 	)
 	# Python weekday: Monday=1..Sunday=7
-	day = date.fromtimestamp(datetime.now(TZ).timestamp()).isoweekday()
-	today = next(m for m in H["mess"] if m["day"] == day)
-	return H["name"], day, today
+	now = datetime.now(TZ)
+	day = date.fromtimestamp(now.timestamp()).isoweekday()
+	# After dinner grace end (22:00), treat "now" as next day's breakfast
+	m = now.hour * 60 + now.minute
+	if m >= 22 * 60:
+		day = day % 7 + 1
+	week = sorted(H["mess"], key=lambda x: x["day"])
+	today = next(m for m in week if m["day"] == day)
+	return H["name"], day, today, week
 
 
 def slot_now() -> str:
@@ -59,7 +65,7 @@ def slot_now() -> str:
 	return "breakfast"
 
 
-def build_text(hostel_name: str, day: int, today: dict) -> str:
+def build_text(hostel_name: str, day: int, today: dict, week: list[dict]) -> str:
 	now_slot = slot_now()
 
 	def split_items(raw: str) -> list[str]:
@@ -104,6 +110,18 @@ def build_text(hostel_name: str, day: int, today: dict) -> str:
 	lines += ["", *section("Lunch", today.get("lunch", ""))]
 	lines += ["", *section("Snacks", today.get("snacks", ""))]
 	lines += ["", *section("Dinner", today.get("dinner", ""))]
+
+	# Append subsequent week's menu (next 6 days)
+	lines += ["", "----------------------------------------", "Upcoming week:"]
+	for offset in range(1, 7):
+		dnum = ((day - 1 + offset) % 7) + 1
+		dmenu = next(m for m in week if m["day"] == dnum)
+		lines += ["", f"Day {dnum}"]
+		lines += section("Breakfast", dmenu.get("breakfast", ""))
+		lines += ["", *section("Lunch", dmenu.get("lunch", ""))]
+		lines += ["", *section("Snacks", dmenu.get("snacks", ""))]
+		lines += ["", *section("Dinner", dmenu.get("dinner", ""))]
+
 	return "\n".join(lines)
 
 
@@ -124,8 +142,8 @@ def upsert(sn: Simplenote, body: str) -> None:
 
 def main() -> None:
 	sn = Simplenote(os.environ["SIMPLENOTE_EMAIL"], os.environ["SIMPLENOTE_PASSWORD"])
-	hostel_name, day, today = fetch_today(HOSTEL_NAME)
-	body = build_text(hostel_name, day, today)
+	hostel_name, day, today, week = fetch_today(HOSTEL_NAME)
+	body = build_text(hostel_name, day, today, week)
 	upsert(sn, body)
 
 
