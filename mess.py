@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
@@ -60,19 +61,49 @@ def slot_now() -> str:
 
 def build_text(hostel_name: str, day: int, today: dict) -> str:
 	now_slot = slot_now()
+
+	def split_items(raw: str) -> list[str]:
+		if not raw:
+			return []
+		text = raw.replace("\r", "\n").replace("\u00a0", " ")
+		text = text.replace("\t", " ")
+		text = text.replace("\ufeff", "")
+		text = text.replace("\u2013", "-")
+		text = text.replace('"', '')
+		lines = []
+		for line in text.split("\n"):
+			line = line.strip()
+			if not line:
+				continue
+			# Further split CSV-like lines, but keep slashes as-is
+			parts = [p.strip() for p in re.split(r",+", line) if p.strip()]
+			lines.extend(parts)
+		cleaned = [clean(x) for x in lines if x]
+		# De-duplicate while preserving order
+		seen = set()
+		result: list[str] = []
+		for it in cleaned:
+			if it not in seen:
+				seen.add(it)
+				result.append(it)
+		return result
+
+	def section(label: str, raw: str) -> list[str]:
+		items = split_items(raw)
+		if not items:
+			return [f"{label}: -"]
+		return [label + ":"] + [f"  • {it}" for it in items]
+
 	lines = [
-		f"# {NOTE_TITLE}",
-		f"**{hostel_name} — Day {day}**",
-		"",
-		f"## Now ({now_slot.upper()})",
-		"",
-		f"{clean(today.get(now_slot, ''))}",
-		"",
-		"## Today",
-		f"- Lunch:  {clean(today.get('lunch', ''))}",
-		f"- Snacks: {clean(today.get('snacks', ''))}",
-		f"- Dinner: {clean(today.get('dinner', ''))}",
+		f"{NOTE_TITLE}",
+		f"{hostel_name} — Day {day}",
+		"----------------------------------------",
+		f"NOW ({now_slot.upper()}):",
 	]
+	lines += [f"  • {it}" for it in split_items(today.get(now_slot, ''))]
+	lines += ["", *section("Lunch", today.get("lunch", ""))]
+	lines += ["", *section("Snacks", today.get("snacks", ""))]
+	lines += ["", *section("Dinner", today.get("dinner", ""))]
 	return "\n".join(lines)
 
 
@@ -83,13 +114,11 @@ def upsert(sn: Simplenote, body: str) -> None:
 		note, _ = sn.get_note(key)
 		note["content"] = body
 		note["tags"] = list(set(note.get("tags", []) + [NOTE_TAG]))
-		note["systemTags"] = list(set(note.get("systemTags", []) + ["markdown"]))
 		sn.update_note(note)
 	else:
 		sn.add_note({
 			"content": body,
 			"tags": [NOTE_TAG],
-			"systemTags": ["markdown"],
 		})
 
 
