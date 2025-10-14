@@ -1,0 +1,25 @@
+name: Update Simplenote Mess Note
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # every 30 min, UTC
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Update note
+        env:
+          SIMPLENOTE_EMAIL: ${{ secrets.SIMPLENOTE_EMAIL }}
+          SIMPLENOTE_PASSWORD: ${{ secrets.SIMPLENOTE_PASSWORD }}
+          HOSTEL_NAME: "Hostel 18"
+          NOTE_TITLE: "mess-menu"
+          NOTE_TAG: "mess-menu"
+        run: python mess.py
