@@ -16,6 +16,22 @@ def clean(s: str) -> str:
 	return " ".join((s or "").split())
 
 
+# Monday=1 .. Sunday=7
+WEEKDAYS = [
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
+	"Sunday",
+]
+
+
+def weekday_name(day: int) -> str:
+	return WEEKDAYS[(day - 1) % 7]
+
+
 def fetch_today(hostel: str = "Hostel 18"):
 	data = requests.get(API, timeout=15).json()
 	H = next(
@@ -102,7 +118,7 @@ def build_text(hostel_name: str, day: int, today: dict, week: list[dict]) -> str
 
 	lines = [
 		f"{NOTE_TITLE}",
-		f"{hostel_name} — Day {day}",
+		f"{hostel_name} — Day {day} ({weekday_name(day)})",
 		"----------------------------------------",
 		f"NOW ({now_slot.upper()}):",
 	]
@@ -116,7 +132,7 @@ def build_text(hostel_name: str, day: int, today: dict, week: list[dict]) -> str
 	for offset in range(1, 7):
 		dnum = ((day - 1 + offset) % 7) + 1
 		dmenu = next(m for m in week if m["day"] == dnum)
-		lines += ["", f"Day {dnum}"]
+		lines += ["", f"Day {dnum} ({weekday_name(dnum)})"]
 		lines += section("Breakfast", dmenu.get("breakfast", ""))
 		lines += ["", *section("Lunch", dmenu.get("lunch", ""))]
 		lines += ["", *section("Snacks", dmenu.get("snacks", ""))]
