@@ -82,27 +82,15 @@ def slot_now() -> str:
 
 
 def next_slot_and_day(current_day: int) -> tuple[str, int]:
-	"""Return the next meal slot and the day it belongs to in IST.
-
-	Uses slot start times (no grace), rolling over to next day after dinner starts.
-	"""
-	now = datetime.now(TZ)
-	m = now.hour * 60 + now.minute
-
-	bf_start = 7 * 60 + 30
-	l_start = 12 * 60
-	sn_start = 16 * 60 + 30
-	d_start = 19 * 60 + 30
-
-	if m < bf_start:
-		return "breakfast", current_day
-	if m < l_start:
+	"""Return the next distinct meal slot (not equal to NOW) and its day."""
+	cur = slot_now()
+	if cur == "breakfast":
 		return "lunch", current_day
-	if m < sn_start:
+	if cur == "lunch":
 		return "snacks", current_day
-	if m < d_start:
+	if cur == "snacks":
 		return "dinner", current_day
-	# After dinner start, next is next day's breakfast
+	# cur == "dinner"
 	return "breakfast", (current_day % 7) + 1
 
 
