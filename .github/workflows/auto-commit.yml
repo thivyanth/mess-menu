@@ -1,0 +1,32 @@
+name: Auto Empty Commit
+
+on:
+  schedule:
+    # Run every 30 days at midnight UTC
+    - cron: '0 0 */30 * *'
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Create empty commit
+        run: |
+          git commit --allow-empty -m "chore: automated empty commit"
+      
+      - name: Push changes
+        run: |
+          git push
+
